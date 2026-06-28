@@ -1,0 +1,67 @@
+.connection-pill.online {
+  color: #276f00;
+  border-color: #8bcf62;
+  background: #eff9e8;
+}
+
+.connection-banner.connected {
+  border-color: #8bcf62;
+  background: #f3faee;
+  box-shadow: 0 0 0 1px rgba(70, 165, 8, .06);
+}
+
+.connection-banner.connected strong {
+  color: #276f00;
+}
+
+.connection-banner.connected .ghost-button {
+  color: #2e7d13;
+  border-color: #65b33f;
+  background: #fff;
+}
+
+.progress-panel {
+  transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
+}
+
+.progress-panel.success {
+  border-color: #8bcf62;
+  background: #f6fbf2;
+  box-shadow: 0 0 0 1px rgba(70, 165, 8, .08);
+}
+
+.progress-panel.success .eyebrow,
+.progress-panel.success h2 {
+  color: #276f00;
+}
+
+.progress-panel.success .progress-stat {
+  color: #276f00;
+  background: #e8f7de;
+}
+
+.progress-panel.success pre {
+  color: #215d0d;
+  border: 1px solid #b7df9d;
+  background: #edf8e6;
+}
+
+.progress-panel.active {
+  border-color: #78b9e8;
+}
+
+.progress-panel.warning {
+  border-color: #e2b342;
+  background: #fffaf0;
+}
+
+.progress-panel.error {
+  border-color: #ea8a9b;
+  background: #fff6f7;
+}
+
+.job-badge.done {
+  color: #fff;
+  background: #46a508;
+  box-shadow: 0 0 0 3px rgba(70, 165, 8, .13);
+}
