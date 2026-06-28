@@ -4,6 +4,16 @@ const statusText = document.querySelector('#statusText');
 const backendStatus = document.querySelector('#backendStatus');
 const connectButton = document.querySelector('#connectButton');
 const startButton = document.querySelector('#startButton');
+const SUPPORTED_SOURCE_TYPES = new Set([
+  'HOME',
+  'POPULAR',
+  'NEWS',
+  'BEST',
+  'FOLLOWING',
+  'LATEST',
+  'SUBREDDIT',
+  'CUSTOM_URL',
+]);
 let pollTimer = null;
 
 function setConnectionStatus({ backendOnline, sessionConnected, cookieCount }) {
@@ -25,8 +35,12 @@ function setConnectionStatus({ backendOnline, sessionConnected, cookieCount }) {
 function addSource(values = {}) {
   const fragment = template.content.cloneNode(true);
   const card = fragment.querySelector('.source-card');
+  const normalizedValues = {
+    ...values,
+    type: SUPPORTED_SOURCE_TYPES.has(values.type) ? values.type : 'HOME',
+  };
 
-  for (const [key, value] of Object.entries(values)) {
+  for (const [key, value] of Object.entries(normalizedValues)) {
     const field = card.querySelector(`[data-field="${key}"]`);
     if (!field) continue;
     if (field.type === 'checkbox') field.checked = Boolean(value);
@@ -196,13 +210,27 @@ startButton.addEventListener('click', () => start().catch((error) => {
 
 async function initialize() {
   const stored = await chrome.storage.local.get(['lastConfig', 'lastJobId']);
-  const initialSources = stored.lastConfig?.sources ?? [
+  const defaultSources = [
     { type: 'HOME', targetPostCount: 50 },
     { type: 'POPULAR', targetPostCount: 50 },
     { type: 'NEWS', targetPostCount: 50 },
     { type: 'BEST', targetPostCount: 50 },
     { type: 'SUBREDDIT', subreddit: 'smallbusiness', targetPostCount: 100, sort: 'NEW' },
   ];
+  const storedSources = Array.isArray(stored.lastConfig?.sources)
+    ? stored.lastConfig.sources.filter((source) => SUPPORTED_SOURCE_TYPES.has(source.type))
+    : [];
+  const initialSources = storedSources.length > 0 ? storedSources : defaultSources;
+
+  if (storedSources.length !== stored.lastConfig?.sources?.length) {
+    await chrome.storage.local.set({
+      lastConfig: {
+        ...(stored.lastConfig || {}),
+        sources: initialSources,
+      },
+    });
+  }
+
   initialSources.forEach(addSource);
 
   const connection = await refreshConnectionStatus();
