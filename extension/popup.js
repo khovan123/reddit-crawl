@@ -6,6 +6,22 @@ const connectButton = document.querySelector('#connectButton');
 const startButton = document.querySelector('#startButton');
 let pollTimer = null;
 
+function setConnectionStatus({ backendOnline, sessionConnected, cookieCount }) {
+  if (!backendOnline) {
+    backendStatus.textContent = 'Backend offline';
+    return;
+  }
+
+  if (!sessionConnected) {
+    backendStatus.textContent = 'Backend online · chưa có session';
+    return;
+  }
+
+  backendStatus.textContent = cookieCount
+    ? `Backend + session OK (${cookieCount} cookies)`
+    : 'Backend + session OK';
+}
+
 function addSource(values = {}) {
   const fragment = template.content.cloneNode(true);
   const card = fragment.querySelector('.source-card');
@@ -74,13 +90,35 @@ async function message(payload) {
   return chrome.runtime.sendMessage(payload);
 }
 
+async function refreshConnectionStatus() {
+  const result = await message({ type: 'GET_BACKEND_STATUS' });
+
+  if (!result?.ok) {
+    setConnectionStatus({ backendOnline: false, sessionConnected: false });
+    return result;
+  }
+
+  setConnectionStatus({
+    backendOnline: result.data.backendOnline,
+    sessionConnected: Boolean(result.data.session?.connected),
+    cookieCount: result.data.session?.cookieCount,
+  });
+
+  return result;
+}
+
 async function connect() {
   connectButton.disabled = true;
   statusText.textContent = 'Đang đọc session từ tab Reddit hiện tại...';
   const result = await message({ type: 'CONNECT_SESSION' });
   connectButton.disabled = false;
   if (!result?.ok) throw new Error(result?.error || 'Không thể kết nối session.');
-  backendStatus.textContent = `Đã kết nối (${result.data.cookieCount} cookies)`;
+
+  setConnectionStatus({
+    backendOnline: true,
+    sessionConnected: true,
+    cookieCount: result.data.cookieCount,
+  });
   statusText.textContent = 'Session đã được gửi tới backend local.';
 }
 
@@ -134,6 +172,7 @@ async function pollJob(jobId) {
 connectButton.addEventListener('click', () => connect().catch((error) => {
   connectButton.disabled = false;
   statusText.textContent = error.message;
+  refreshConnectionStatus().catch(() => undefined);
 }));
 
 document.querySelector('#addSourceButton').addEventListener('click', () => addSource({ type: 'SUBREDDIT', targetPostCount: 50, sort: 'NEW' }));
@@ -151,8 +190,10 @@ async function initialize() {
   ];
   initialSources.forEach(addSource);
 
-  const session = await message({ type: 'GET_SESSION_STATUS' });
-  backendStatus.textContent = session?.ok && session.data.connected ? 'Backend + session OK' : 'Backend chưa kết nối';
+  const connection = await refreshConnectionStatus();
+  if (connection?.ok && connection.data.backendOnline && !connection.data.session?.connected) {
+    statusText.textContent = 'Backend đang chạy. Hãy mở tab Reddit đã đăng nhập rồi nhấn “Kết nối session”.';
+  }
 
   if (stored.lastJobId) {
     await pollJob(stored.lastJobId).catch(() => undefined);
@@ -160,5 +201,6 @@ async function initialize() {
 }
 
 initialize().catch((error) => {
+  setConnectionStatus({ backendOnline: false, sessionConnected: false });
   statusText.textContent = error.message;
 });
