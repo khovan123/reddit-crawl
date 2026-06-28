@@ -4,6 +4,7 @@ import {
   Controller,
   Get,
   HttpCode,
+  Inject,
   Param,
   Post,
 } from '@nestjs/common';
@@ -15,7 +16,9 @@ import { crawlConfigSchema, sessionSnapshotSchema } from './reddit.validation';
 @Controller('api/reddit')
 export class RedditController {
   constructor(
+    @Inject(RedditSessionService)
     private readonly sessions: RedditSessionService,
+    @Inject(RedditCrawlerService)
     private readonly crawler: RedditCrawlerService,
   ) {}
 
