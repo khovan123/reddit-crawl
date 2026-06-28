@@ -22,6 +22,30 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
+  if (message?.type === 'GET_BACKEND_STATUS') {
+    Promise.all([apiFetch('/health'), apiFetch('/session')])
+      .then(([health, session]) =>
+        sendResponse({
+          ok: true,
+          data: {
+            backendOnline: health?.ok === true,
+            session,
+          },
+        }),
+      )
+      .catch((error) =>
+        sendResponse({
+          ok: false,
+          data: {
+            backendOnline: false,
+            session: { connected: false },
+          },
+          error: error.message,
+        }),
+      );
+    return true;
+  }
+
   if (message?.type === 'GET_SESSION_STATUS') {
     apiFetch('/session')
       .then((data) => sendResponse({ ok: true, data }))
