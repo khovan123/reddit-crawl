@@ -1,3 +1,7 @@
+.feed-card[data-type="LATEST"] {
+  display: none !important;
+}
+
 .connection-pill.online {
   color: #276f00;
   border-color: #8bcf62;
