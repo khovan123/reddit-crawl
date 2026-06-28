@@ -1,0 +1,49 @@
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-logo {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.language-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid #d6d9dc;
+  border-radius: 999px;
+  color: #1a1a1b;
+  background: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+
+.language-button:hover {
+  color: #d93a00;
+  border-color: #ff9b78;
+  background: #fff7f3;
+}
+
+.language-button:focus-visible {
+  outline: 2px solid rgba(0, 121, 211, .28);
+  outline-offset: 2px;
+}
+
+@media (max-width: 620px) {
+  .topbar-actions {
+    gap: 6px;
+  }
+
+  .connection-pill {
+    max-width: 190px;
+  }
+}
