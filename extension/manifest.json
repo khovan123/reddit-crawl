@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Local Reddit Crawl Session Connector",
+  "version": "1.0.0",
+  "description": "Sends the current Reddit browser session to the local Reddit crawler backend and starts crawl jobs.",
+  "permissions": ["cookies", "tabs", "scripting", "storage"],
+  "host_permissions": [
+    "https://reddit.com/*",
+    "https://*.reddit.com/*",
+    "http://127.0.0.1:47831/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Reddit Crawl",
+    "default_popup": "popup.html"
+  }
+}

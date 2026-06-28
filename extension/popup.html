@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reddit Crawl</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>Reddit Crawl</h1>
+          <p>Quét bằng session Reddit hiện tại</p>
+        </div>
+        <span id="backendStatus" class="badge">Chưa kiểm tra</span>
+      </header>
+
+      <section class="toolbar">
+        <button id="connectButton" class="secondary">Kết nối session</button>
+        <button id="addSourceButton" class="secondary">+ Thêm nguồn</button>
+      </section>
+
+      <section id="sources"></section>
+
+      <section class="options">
+        <label><input id="detailEnabled" type="checkbox" checked /> Mở chi tiết từng bài</label>
+        <label>
+          Top comments
+          <input id="commentsTopN" type="number" min="0" max="50" value="0" />
+        </label>
+      </section>
+
+      <button id="startButton" class="primary">Bắt đầu quét</button>
+
+      <section class="progress">
+        <strong>Trạng thái</strong>
+        <pre id="statusText">Sẵn sàng.</pre>
+      </section>
+    </main>
+
+    <template id="sourceTemplate">
+      <article class="source-card">
+        <div class="source-grid">
+          <label>
+            Nguồn
+            <select data-field="type">
+              <option value="HOME">Home</option>
+              <option value="FOR_YOU">For You</option>
+              <option value="FOLLOWING">Following</option>
+              <option value="POPULAR">Popular</option>
+              <option value="LATEST">Latest</option>
+              <option value="SUBREDDIT">Subreddit</option>
+              <option value="CUSTOM_URL">URL Reddit</option>
+            </select>
+          </label>
+          <label class="conditional subreddit-field">
+            Subreddit
+            <input data-field="subreddit" placeholder="smallbusiness" />
+          </label>
+          <label class="conditional url-field">
+            URL
+            <input data-field="url" placeholder="https://www.reddit.com/..." />
+          </label>
+          <label>
+            Sort
+            <select data-field="sort">
+              <option value="HOT">Hot</option>
+              <option value="NEW">New</option>
+              <option value="TOP">Top</option>
+              <option value="RISING">Rising</option>
+              <option value="BEST">Best</option>
+            </select>
+          </label>
+          <label>
+            Số bài
+            <input data-field="targetPostCount" type="number" min="1" max="2000" value="50" />
+          </label>
+        </div>
+        <div class="source-flags">
+          <label><input data-field="includePromoted" type="checkbox" /> Quảng cáo</label>
+          <label><input data-field="includePinned" type="checkbox" /> Pinned</label>
+          <label><input data-field="includeNsfw" type="checkbox" /> NSFW</label>
+          <button data-action="remove" class="danger">Xóa</button>
+        </div>
+      </article>
+    </template>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

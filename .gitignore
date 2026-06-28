@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+.env.*
+*.log
+reddit-crawl-*.json
+reddit-crawl-result.json
+.playwright/
+.DS_Store
