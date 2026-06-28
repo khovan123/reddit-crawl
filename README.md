@@ -1,6 +1,6 @@
 # Local Reddit Crawl
 
-Backend NestJS + WebExtension chạy hoàn toàn trên máy local. Extension hỗ trợ Google Chrome/Chromium và Firefox, đọc session của tab Reddit hiện tại, gửi session tới backend trên `127.0.0.1`, sau đó Playwright mở một browser context riêng để tự cuộn các feed theo quota và xuất JSON ở root project.
+Backend NestJS + WebExtension chạy hoàn toàn trên máy local. Extension hỗ trợ Google Chrome/Chromium và Firefox, đọc session của tab Reddit hiện tại, gửi session tới backend trên `127.0.0.1`, sau đó Playwright mở một browser context chạy nền để tự cuộn các feed theo quota và xuất JSON ở root project.
 
 ## Dữ liệu xuất ra
 
@@ -40,15 +40,47 @@ Kiểm tra:
 curl http://127.0.0.1:47831/api/reddit/health
 ```
 
+### Chế độ chạy Playwright
+
+Playwright mặc định chạy nền bằng headless mode nên không mở hoặc giành focus cửa sổ Chrome trong quá trình crawl.
+
+Khi backend khởi động sẽ hiển thị:
+
+```text
+Playwright mode: background (headless)
+```
+
+Chỉ bật cửa sổ browser khi cần debug bằng biến môi trường:
+
+```powershell
+$env:REDDIT_SHOW_BROWSER="true"
+npm run start:dev
+```
+
+Hoặc trên Bash:
+
+```bash
+REDDIT_SHOW_BROWSER=true npm run start:dev
+```
+
+Khi đó log sẽ hiển thị:
+
+```text
+Playwright mode: visible browser (debug)
+```
+
+Biến cũ `REDDIT_HEADLESS` không còn quyết định chế độ chạy. Điều này bảo đảm các file cấu hình cũ có `REDDIT_HEADLESS=false` không tiếp tục mở cửa sổ ngoài ý muốn.
+
 ### Browser mà Playwright dùng
 
 Mặc định `.env.example` đặt:
 
 ```env
+REDDIT_SHOW_BROWSER=false
 REDDIT_BROWSER_CHANNEL=chrome
 ```
 
-Thiết lập này chỉ quyết định browser do backend Playwright khởi chạy. Extension có thể lấy session từ Chrome hoặc Firefox; snapshot cookie, user-agent, locale, timezone và viewport sẽ được đưa vào Playwright context.
+`REDDIT_BROWSER_CHANNEL` chỉ quyết định browser executable do backend Playwright khởi chạy. Extension có thể lấy session từ Chrome hoặc Firefox; snapshot cookie, user-agent, locale, timezone và viewport sẽ được đưa vào Playwright context.
 
 Muốn dùng Chromium do Playwright cài, để biến này rỗng:
 
@@ -164,15 +196,16 @@ GET /api/reddit/crawl/<jobId>
 
 1. Extension lấy cookie store của tab Reddit active.
 2. Extension gửi cookie, localStorage, user-agent, locale, timezone và viewport tới backend local.
-3. Backend tạo Playwright context mới và nạp snapshot session.
-4. Mở từng source tuần tự.
+3. Backend khởi chạy Playwright ở chế độ nền và tạo browser context mới từ snapshot session.
+4. Mở từng source tuần tự trong browser headless.
 5. Parse post card và permalink đang render.
 6. Dedupe bằng `t3_<postId>` hoặc ID trong permalink.
 7. Cuộn, bấm load-more, retry và reload một lần khi feed bị stall.
 8. Dừng khi đủ quota hoặc đã dùng hết giới hạn phục hồi.
-9. Mở tối đa số detail tabs được cấu hình để lấy full body, media và comments.
+9. Mở tối đa số detail pages được cấu hình để lấy full body, media và comments.
 10. Gộp post canonical với placements của từng source.
 11. Ghi JSON tại root.
+12. Đóng toàn bộ browser process của job trong khối `finally`, kể cả khi job lỗi hoặc bị hủy.
 
 ## Lưu ý vận hành
 
@@ -182,4 +215,4 @@ GET /api/reddit/crawl/<jobId>
 - Extension chỉ kết nối tới backend local tại `127.0.0.1:47831`.
 - Firefox cần cho phép host permission Reddit và localhost.
 - Khi Reddit đổi DOM, cập nhật parser/scroll strategy trong `src/reddit/`.
-- Chạy headful (`REDDIT_HEADLESS=false`) sẽ dễ quan sát và ổn định hơn với feed cá nhân hóa.
+- Dùng `REDDIT_SHOW_BROWSER=true` chỉ trong lúc debug vì chế độ này sẽ mở cửa sổ và có thể ảnh hưởng tới người dùng.
