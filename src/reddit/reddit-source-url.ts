@@ -24,7 +24,7 @@ export function resolveRedditSourceUrl(
       return `https://${host}/posts/${new Date().getUTCFullYear()}/global/`;
 
     case 'LATEST':
-      return `https://${host}/latest/`;
+      throw new Error('The Reddit /latest source has been removed.');
 
     case 'SUBREDDIT': {
       const subreddit = source.subreddit?.trim().replace(/^r\//i, '');
@@ -39,8 +39,13 @@ export function resolveRedditSourceUrl(
       return url.href;
     }
 
-    case 'CUSTOM_URL':
-      return source.url!;
+    case 'CUSTOM_URL': {
+      const url = new URL(source.url!);
+      if (url.pathname.replace(/\/+$/, '').toLowerCase() === '/latest') {
+        throw new Error('The Reddit /latest source has been removed.');
+      }
+      return url.href;
+    }
 
     default:
       return `https://${host}/`;
