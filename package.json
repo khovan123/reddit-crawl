@@ -2,7 +2,7 @@
   "name": "reddit-crawl-local",
   "version": "1.0.0",
   "private": true,
-  "description": "Local Reddit scraper using the current Chrome session exported by a companion extension.",
+  "description": "Local Reddit scraper using the current Chrome or Firefox session exported by a companion WebExtension.",
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
