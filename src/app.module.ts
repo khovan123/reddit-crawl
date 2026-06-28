@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { RedditController } from './reddit/reddit.controller';
 import { RedditCrawlerService } from './reddit/reddit-crawler.service';
+import { RedditCrawlerV2Service } from './reddit/reddit-crawler-v2.service';
 import { RedditOutputService } from './reddit/reddit-output.service';
 import { RedditSessionService } from './reddit/reddit-session.service';
 
@@ -15,7 +16,7 @@ import { RedditSessionService } from './reddit/reddit-session.service';
       useFactory: (
         sessions: RedditSessionService,
         output: RedditOutputService,
-      ): RedditCrawlerService => new RedditCrawlerService(sessions, output),
+      ) => new RedditCrawlerV2Service(sessions, output),
     },
   ],
 })
