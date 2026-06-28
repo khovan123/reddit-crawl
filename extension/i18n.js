@@ -118,12 +118,17 @@
     );
   }
 
-  function loadStructuredResults() {
-    if (document.querySelector('script[data-job-results]')) return;
+  function loadPopupScript(path, marker) {
+    if (document.querySelector(`script[data-${marker}]`)) return;
     const script = document.createElement('script');
-    script.src = chrome.runtime.getURL('job-results.js');
-    script.dataset.jobResults = 'true';
+    script.src = chrome.runtime.getURL(path);
+    script.dataset[marker] = 'true';
     document.head.append(script);
+  }
+
+  function loadPopupEnhancements() {
+    loadPopupScript('job-results.js', 'jobResults');
+    loadPopupScript('removed-sources.js', 'removedSources');
   }
 
   async function init() {
@@ -135,7 +140,7 @@
     const stored = await chrome.storage.local.get(STORAGE_KEY);
     locale = stored[STORAGE_KEY] === 'en' ? 'en' : 'vi';
     apply();
-    loadStructuredResults();
+    loadPopupEnhancements();
     document.querySelector('#languageToggle')?.addEventListener('click', () => {
       void setLocale(locale === 'vi' ? 'en' : 'vi');
     });
