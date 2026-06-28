@@ -113,6 +113,17 @@
     locale = next === 'en' ? 'en' : 'vi';
     await chrome.storage.local.set({ [STORAGE_KEY]: locale });
     apply();
+    window.dispatchEvent(
+      new CustomEvent('reddit-i18n-changed', { detail: { locale } }),
+    );
+  }
+
+  function loadStructuredResults() {
+    if (document.querySelector('script[data-job-results]')) return;
+    const script = document.createElement('script');
+    script.src = chrome.runtime.getURL('job-results.js');
+    script.dataset.jobResults = 'true';
+    document.head.append(script);
   }
 
   async function init() {
@@ -124,6 +135,7 @@
     const stored = await chrome.storage.local.get(STORAGE_KEY);
     locale = stored[STORAGE_KEY] === 'en' ? 'en' : 'vi';
     apply();
+    loadStructuredResults();
     document.querySelector('#languageToggle')?.addEventListener('click', () => {
       void setLocale(locale === 'vi' ? 'en' : 'vi');
     });
