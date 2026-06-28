@@ -3,6 +3,8 @@ export type RedditSourceType =
   | 'FOR_YOU'
   | 'FOLLOWING'
   | 'POPULAR'
+  | 'NEWS'
+  | 'BEST'
   | 'LATEST'
   | 'SUBREDDIT'
   | 'CUSTOM_URL';
