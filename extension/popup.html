@@ -6,37 +6,41 @@
     <title>Reddit Crawl</title>
     <link rel="stylesheet" href="popup.css" />
     <link rel="stylesheet" href="status-overrides.css" />
+    <link rel="stylesheet" href="language.css" />
   </head>
   <body>
     <main class="app-shell">
       <header class="topbar">
         <div class="brand">
-          <span class="brand-mark">r/</span>
+          <img class="brand-logo" src="icons/icon-48.png" alt="Reddit Crawl" />
           <div>
             <h1>Reddit Crawl</h1>
-            <p>Thu thập bài viết Reddit trên máy</p>
+            <p data-i18n="app.subtitle">Thu thập bài viết Reddit trên máy</p>
           </div>
         </div>
-        <button id="connectionButton" class="connection-pill" type="button">
-          <span id="connectionDot" class="connection-dot"></span>
-          <span id="connectionLabel">Đang kiểm tra kết nối…</span>
-        </button>
+        <div class="topbar-actions">
+          <button id="languageToggle" class="language-button" type="button" aria-label="Switch language">EN</button>
+          <button id="connectionButton" class="connection-pill" type="button">
+            <span id="connectionDot" class="connection-dot"></span>
+            <span id="connectionLabel" data-i18n="connection.checking">Đang kiểm tra kết nối…</span>
+          </button>
+        </div>
       </header>
 
       <section class="connection-banner" id="connectionBanner">
         <div>
-          <strong id="connectionTitle">Đang chuẩn bị kết nối</strong>
-          <p id="connectionMessage">Tiện ích sẽ tự kết nối với ứng dụng Reddit Crawl trên máy.</p>
+          <strong id="connectionTitle" data-i18n="connection.preparing">Đang chuẩn bị kết nối</strong>
+          <p id="connectionMessage" data-i18n="connection.autoConnect">Tiện ích sẽ tự kết nối với ứng dụng Reddit Crawl trên máy.</p>
         </div>
-        <button id="connectButton" class="ghost-button" type="button">Thử kết nối</button>
+        <button id="connectButton" class="ghost-button" type="button" data-i18n="connection.try">Thử kết nối</button>
       </section>
 
       <section class="panel">
         <div class="section-heading">
           <div>
-            <span class="eyebrow">Nguồn có sẵn</span>
-            <h2>Chọn nơi cần lấy bài</h2>
-            <p>Bật nguồn cần dùng và nhập số bài mong muốn.</p>
+            <span class="eyebrow" data-i18n="builtin.eyebrow">Nguồn có sẵn</span>
+            <h2 data-i18n="builtin.title">Chọn nơi cần lấy bài</h2>
+            <p data-i18n="builtin.description">Bật nguồn cần dùng và nhập số bài mong muốn.</p>
           </div>
           <span class="section-count" id="builtinSelectedCount">0 nguồn</span>
         </div>
@@ -46,58 +50,58 @@
       <section class="panel">
         <div class="section-heading compact-heading">
           <div>
-            <span class="eyebrow">Cộng đồng</span>
-            <h2>Subreddit tùy chọn</h2>
-            <p>Mỗi subreddit có kiểu sắp xếp và số bài riêng.</p>
+            <span class="eyebrow" data-i18n="subreddits.eyebrow">Cộng đồng</span>
+            <h2 data-i18n="subreddits.title">Subreddit tùy chọn</h2>
+            <p data-i18n="subreddits.description">Mỗi subreddit có kiểu sắp xếp và số bài riêng.</p>
           </div>
-          <button id="addSubredditButton" class="reddit-button secondary" type="button">+ Thêm subreddit</button>
+          <button id="addSubredditButton" class="reddit-button secondary" type="button" data-i18n="subreddits.add">+ Thêm subreddit</button>
         </div>
         <div id="subredditList" class="stack-list"></div>
-        <div id="subredditEmpty" class="empty-state">Bạn chưa thêm subreddit nào.</div>
+        <div id="subredditEmpty" class="empty-state" data-i18n="subreddits.empty">Bạn chưa thêm subreddit nào.</div>
       </section>
 
       <section class="panel">
         <div class="section-heading compact-heading">
           <div>
-            <span class="eyebrow">Đường dẫn</span>
-            <h2>URL Reddit tùy chọn</h2>
-            <p>Có thể thêm nhiều đường dẫn, mỗi đường dẫn có số bài riêng.</p>
+            <span class="eyebrow" data-i18n="urls.eyebrow">Đường dẫn</span>
+            <h2 data-i18n="urls.title">URL Reddit tùy chọn</h2>
+            <p data-i18n="urls.description">Có thể thêm nhiều đường dẫn, mỗi đường dẫn có số bài riêng.</p>
           </div>
-          <button id="addUrlButton" class="reddit-button secondary" type="button">+ Thêm URL</button>
+          <button id="addUrlButton" class="reddit-button secondary" type="button" data-i18n="urls.add">+ Thêm URL</button>
         </div>
         <div id="urlList" class="stack-list"></div>
-        <div id="urlEmpty" class="empty-state">Bạn chưa thêm URL Reddit nào.</div>
+        <div id="urlEmpty" class="empty-state" data-i18n="urls.empty">Bạn chưa thêm URL Reddit nào.</div>
       </section>
 
       <section class="panel settings-panel">
         <div class="section-heading">
           <div>
-            <span class="eyebrow">Nội dung cần lấy</span>
-            <h2>Tùy chọn thu thập</h2>
+            <span class="eyebrow" data-i18n="capture.eyebrow">Nội dung cần lấy</span>
+            <h2 data-i18n="capture.title">Tùy chọn thu thập</h2>
           </div>
         </div>
         <div class="settings-grid">
           <label class="setting-row">
             <span>
-              <strong>Lấy đầy đủ nội dung bài viết</strong>
-              <small>Mở từng bài để lấy nội dung và hình ảnh.</small>
+              <strong data-i18n="capture.detailTitle">Lấy đầy đủ nội dung bài viết</strong>
+              <small data-i18n="capture.detailDescription">Mở từng bài để lấy nội dung và hình ảnh.</small>
             </span>
             <input id="detailEnabled" type="checkbox" class="toggle-input" checked />
           </label>
           <label class="field-block">
-            <span>Số bình luận nổi bật mỗi bài</span>
+            <span data-i18n="capture.comments">Số bình luận nổi bật mỗi bài</span>
             <input id="commentsTopN" type="number" min="0" max="50" value="0" />
           </label>
           <label class="setting-row compact-setting">
-            <span>Bao gồm bài quảng cáo</span>
+            <span data-i18n="capture.promoted">Bao gồm bài quảng cáo</span>
             <input id="includePromoted" type="checkbox" class="toggle-input" />
           </label>
           <label class="setting-row compact-setting">
-            <span>Bao gồm bài được ghim</span>
+            <span data-i18n="capture.pinned">Bao gồm bài được ghim</span>
             <input id="includePinned" type="checkbox" class="toggle-input" />
           </label>
           <label class="setting-row compact-setting">
-            <span>Bao gồm nội dung NSFW</span>
+            <span data-i18n="capture.nsfw">Bao gồm nội dung NSFW</span>
             <input id="includeNsfw" type="checkbox" class="toggle-input" />
           </label>
         </div>
@@ -106,13 +110,13 @@
       <section class="panel progress-panel" id="progressPanel">
         <div class="section-heading compact-heading">
           <div>
-            <span class="eyebrow">Lần quét gần nhất</span>
-            <h2>Trạng thái quét</h2>
+            <span class="eyebrow" data-i18n="job.eyebrow">Lần quét gần nhất</span>
+            <h2 data-i18n="job.title">Trạng thái quét</h2>
           </div>
-          <span id="jobStatusBadge" class="job-badge idle">Sẵn sàng</span>
+          <span id="jobStatusBadge" class="job-badge idle" data-i18n="job.ready">Sẵn sàng</span>
         </div>
         <div id="progressSummary" class="progress-summary hidden"></div>
-        <pre id="statusText">Chưa bắt đầu quét.</pre>
+        <pre id="statusText" data-i18n="job.notStarted">Chưa bắt đầu quét.</pre>
       </section>
 
       <footer class="footer-actions">
@@ -120,57 +124,58 @@
           <strong id="selectionTotal">0 nguồn</strong>
           <span id="selectionPosts">0 bài dự kiến</span>
         </div>
-        <button id="startButton" class="reddit-button primary" type="button">Bắt đầu quét</button>
+        <button id="startButton" class="reddit-button primary" type="button" data-i18n="job.start">Bắt đầu quét</button>
       </footer>
     </main>
 
     <template id="subredditTemplate">
       <article class="source-row subreddit-row">
-        <label class="row-toggle" title="Bật hoặc tắt nguồn này">
+        <label class="row-toggle" data-i18n-title="source.toggle" title="Bật hoặc tắt nguồn này">
           <input data-field="enabled" type="checkbox" class="toggle-input" checked />
         </label>
         <label class="field-block grow-field">
-          <span>Tên subreddit</span>
+          <span data-i18n="source.subredditName">Tên subreddit</span>
           <div class="prefix-input">
             <span>r/</span>
             <input data-field="subreddit" placeholder="smallbusiness" autocomplete="off" />
           </div>
         </label>
         <label class="field-block sort-field">
-          <span>Sắp xếp</span>
+          <span data-i18n="source.sort">Sắp xếp</span>
           <select data-field="sort">
-            <option value="HOT">Nổi bật</option>
-            <option value="NEW">Mới nhất</option>
-            <option value="TOP">Nhiều tương tác</option>
-            <option value="RISING">Đang tăng</option>
-            <option value="BEST">Phù hợp nhất</option>
+            <option value="HOT" data-i18n="sort.hot">Nổi bật</option>
+            <option value="NEW" data-i18n="sort.new">Mới nhất</option>
+            <option value="TOP" data-i18n="sort.top">Nhiều tương tác</option>
+            <option value="RISING" data-i18n="sort.rising">Đang tăng</option>
+            <option value="BEST" data-i18n="sort.best">Phù hợp nhất</option>
           </select>
         </label>
         <label class="field-block count-field">
-          <span>Số bài</span>
+          <span data-i18n="source.count">Số bài</span>
           <input data-field="targetPostCount" type="number" min="1" max="2000" value="50" />
         </label>
-        <button data-action="remove" class="icon-button danger" type="button" aria-label="Xóa subreddit">×</button>
+        <button data-action="remove" class="icon-button danger" type="button" data-i18n-aria-label="source.removeSubreddit" aria-label="Xóa subreddit">×</button>
       </article>
     </template>
 
     <template id="urlTemplate">
       <article class="source-row url-row">
-        <label class="row-toggle" title="Bật hoặc tắt nguồn này">
+        <label class="row-toggle" data-i18n-title="source.toggle" title="Bật hoặc tắt nguồn này">
           <input data-field="enabled" type="checkbox" class="toggle-input" checked />
         </label>
         <label class="field-block grow-field">
-          <span>Đường dẫn Reddit</span>
+          <span data-i18n="source.redditUrl">Đường dẫn Reddit</span>
           <input data-field="url" type="url" placeholder="https://www.reddit.com/r/sales/new/" />
         </label>
         <label class="field-block count-field">
-          <span>Số bài</span>
+          <span data-i18n="source.count">Số bài</span>
           <input data-field="targetPostCount" type="number" min="1" max="2000" value="50" />
         </label>
-        <button data-action="remove" class="icon-button danger" type="button" aria-label="Xóa URL">×</button>
+        <button data-action="remove" class="icon-button danger" type="button" data-i18n-aria-label="source.removeUrl" aria-label="Xóa URL">×</button>
       </article>
     </template>
 
+    <script src="i18n.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>
