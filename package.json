@@ -5,9 +5,9 @@
   "description": "Local Reddit scraper using the current Chrome session exported by a companion extension.",
   "license": "UNLICENSED",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "nest build",
     "start": "node dist/main.js",
-    "start:dev": "tsx watch src/main.ts",
+    "start:dev": "nest start --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "format": "prettier --write \"src/**/*.ts\""
   },
@@ -21,9 +21,9 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
+    "@nestjs/cli": "11.0.23",
     "@types/node": "24.10.4",
     "prettier": "3.8.1",
-    "tsx": "4.21.0",
     "typescript": "5.8.3"
   },
   "engines": {
