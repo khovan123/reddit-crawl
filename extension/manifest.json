@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Local Reddit Crawl Session Connector",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Connects the current Reddit session to the local crawler, manages sources, and starts crawl jobs.",
   "permissions": ["alarms", "cookies", "tabs", "scripting", "storage"],
   "host_permissions": [
