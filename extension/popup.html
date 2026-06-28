@@ -13,29 +13,29 @@
           <span class="brand-mark">r/</span>
           <div>
             <h1>Reddit Crawl</h1>
-            <p>Local feed collector</p>
+            <p>Thu thập bài viết Reddit trên máy</p>
           </div>
         </div>
         <button id="connectionButton" class="connection-pill" type="button">
           <span id="connectionDot" class="connection-dot"></span>
-          <span id="connectionLabel">Đang kiểm tra…</span>
+          <span id="connectionLabel">Đang kiểm tra kết nối…</span>
         </button>
       </header>
 
       <section class="connection-banner" id="connectionBanner">
         <div>
-          <strong id="connectionTitle">Đang kết nối backend</strong>
-          <p id="connectionMessage">Extension sẽ tự thử lại 3 lần trong cửa sổ tối đa 5 phút.</p>
+          <strong id="connectionTitle">Đang chuẩn bị kết nối</strong>
+          <p id="connectionMessage">Tiện ích sẽ tự kết nối với ứng dụng Reddit Crawl trên máy.</p>
         </div>
-        <button id="connectButton" class="ghost-button" type="button">Kết nối lại</button>
+        <button id="connectButton" class="ghost-button" type="button">Thử kết nối</button>
       </section>
 
       <section class="panel">
         <div class="section-heading">
           <div>
-            <span class="eyebrow">Feeds</span>
-            <h2>Nguồn mặc định</h2>
-            <p>Bật hoặc tắt từng nguồn và đặt số bài cần lấy.</p>
+            <span class="eyebrow">Nguồn có sẵn</span>
+            <h2>Chọn nơi cần lấy bài</h2>
+            <p>Bật nguồn cần dùng và nhập số bài mong muốn.</p>
           </div>
           <span class="section-count" id="builtinSelectedCount">0 nguồn</span>
         </div>
@@ -45,73 +45,73 @@
       <section class="panel">
         <div class="section-heading compact-heading">
           <div>
-            <span class="eyebrow">Communities</span>
-            <h2>Subreddits</h2>
-            <p>Mỗi subreddit có sort và quota riêng.</p>
+            <span class="eyebrow">Cộng đồng</span>
+            <h2>Subreddit tùy chọn</h2>
+            <p>Mỗi subreddit có kiểu sắp xếp và số bài riêng.</p>
           </div>
           <button id="addSubredditButton" class="reddit-button secondary" type="button">+ Thêm subreddit</button>
         </div>
         <div id="subredditList" class="stack-list"></div>
-        <div id="subredditEmpty" class="empty-state">Chưa có subreddit tùy chỉnh.</div>
+        <div id="subredditEmpty" class="empty-state">Bạn chưa thêm subreddit nào.</div>
       </section>
 
       <section class="panel">
         <div class="section-heading compact-heading">
           <div>
-            <span class="eyebrow">Links</span>
-            <h2>Reddit URLs</h2>
-            <p>Thêm nhiều URL Reddit, mỗi URL có quota độc lập.</p>
+            <span class="eyebrow">Đường dẫn</span>
+            <h2>URL Reddit tùy chọn</h2>
+            <p>Có thể thêm nhiều đường dẫn, mỗi đường dẫn có số bài riêng.</p>
           </div>
           <button id="addUrlButton" class="reddit-button secondary" type="button">+ Thêm URL</button>
         </div>
         <div id="urlList" class="stack-list"></div>
-        <div id="urlEmpty" class="empty-state">Chưa có URL Reddit tùy chỉnh.</div>
+        <div id="urlEmpty" class="empty-state">Bạn chưa thêm URL Reddit nào.</div>
       </section>
 
       <section class="panel settings-panel">
         <div class="section-heading">
           <div>
-            <span class="eyebrow">Capture</span>
+            <span class="eyebrow">Nội dung cần lấy</span>
             <h2>Tùy chọn thu thập</h2>
           </div>
         </div>
         <div class="settings-grid">
           <label class="setting-row">
             <span>
-              <strong>Mở chi tiết bài viết</strong>
-              <small>Lấy full content và media.</small>
+              <strong>Lấy đầy đủ nội dung bài viết</strong>
+              <small>Mở từng bài để lấy nội dung và hình ảnh.</small>
             </span>
             <input id="detailEnabled" type="checkbox" class="toggle-input" checked />
           </label>
           <label class="field-block">
-            <span>Top comments mỗi bài</span>
+            <span>Số bình luận nổi bật mỗi bài</span>
             <input id="commentsTopN" type="number" min="0" max="50" value="0" />
           </label>
           <label class="setting-row compact-setting">
-            <span>Gồm quảng cáo</span>
+            <span>Bao gồm bài quảng cáo</span>
             <input id="includePromoted" type="checkbox" class="toggle-input" />
           </label>
           <label class="setting-row compact-setting">
-            <span>Gồm pinned</span>
+            <span>Bao gồm bài được ghim</span>
             <input id="includePinned" type="checkbox" class="toggle-input" />
           </label>
           <label class="setting-row compact-setting">
-            <span>Gồm NSFW</span>
+            <span>Bao gồm nội dung NSFW</span>
             <input id="includeNsfw" type="checkbox" class="toggle-input" />
           </label>
         </div>
       </section>
 
-      <section class="panel progress-panel">
+      <section class="panel progress-panel" id="progressPanel">
         <div class="section-heading compact-heading">
           <div>
-            <span class="eyebrow">Job</span>
-            <h2>Tiến trình</h2>
+            <span class="eyebrow">Lần quét gần nhất</span>
+            <h2>Trạng thái quét</h2>
           </div>
           <span id="jobStatusBadge" class="job-badge idle">Sẵn sàng</span>
         </div>
         <div id="progressSummary" class="progress-summary hidden"></div>
-        <pre id="statusText">Chưa có job đang chạy.</pre>
+        <pre id="statusText">Chưa bắt đầu quét.</pre>
       </section>
 
       <footer class="footer-actions">
@@ -129,20 +129,20 @@
           <input data-field="enabled" type="checkbox" class="toggle-input" checked />
         </label>
         <label class="field-block grow-field">
-          <span>Subreddit</span>
+          <span>Tên subreddit</span>
           <div class="prefix-input">
             <span>r/</span>
             <input data-field="subreddit" placeholder="smallbusiness" autocomplete="off" />
           </div>
         </label>
         <label class="field-block sort-field">
-          <span>Sort</span>
+          <span>Sắp xếp</span>
           <select data-field="sort">
-            <option value="HOT">Hot</option>
-            <option value="NEW">New</option>
-            <option value="TOP">Top</option>
-            <option value="RISING">Rising</option>
-            <option value="BEST">Best</option>
+            <option value="HOT">Nổi bật</option>
+            <option value="NEW">Mới nhất</option>
+            <option value="TOP">Nhiều tương tác</option>
+            <option value="RISING">Đang tăng</option>
+            <option value="BEST">Phù hợp nhất</option>
           </select>
         </label>
         <label class="field-block count-field">
@@ -159,7 +159,7 @@
           <input data-field="enabled" type="checkbox" class="toggle-input" checked />
         </label>
         <label class="field-block grow-field">
-          <span>Reddit URL</span>
+          <span>Đường dẫn Reddit</span>
           <input data-field="url" type="url" placeholder="https://www.reddit.com/r/sales/new/" />
         </label>
         <label class="field-block count-field">
