@@ -43,23 +43,31 @@ function updateConditionalFields(card) {
   const type = card.querySelector('[data-field="type"]').value;
   card.querySelector('.subreddit-field').classList.toggle('hidden', type !== 'SUBREDDIT');
   card.querySelector('.url-field').classList.toggle('hidden', type !== 'CUSTOM_URL');
+  card.querySelector('.sort-field').classList.toggle('hidden', type !== 'SUBREDDIT');
 }
 
 function collectConfig() {
   const sources = [...sourcesElement.querySelectorAll('.source-card')].map((card, index) => {
     const read = (name) => card.querySelector(`[data-field="${name}"]`);
+    const type = read('type').value;
     const source = {
       id: `source-${index + 1}`,
-      type: read('type').value,
-      sort: read('sort').value,
+      type,
       targetPostCount: Number(read('targetPostCount').value),
       includePromoted: read('includePromoted').checked,
       includePinned: read('includePinned').checked,
       includeNsfw: read('includeNsfw').checked,
     };
 
-    if (source.type === 'SUBREDDIT') source.subreddit = read('subreddit').value.trim();
-    if (source.type === 'CUSTOM_URL') source.url = read('url').value.trim();
+    if (type === 'SUBREDDIT') {
+      source.subreddit = read('subreddit').value.trim();
+      source.sort = read('sort').value;
+    }
+
+    if (type === 'CUSTOM_URL') {
+      source.url = read('url').value.trim();
+    }
+
     return source;
   });
 
@@ -175,7 +183,12 @@ connectButton.addEventListener('click', () => connect().catch((error) => {
   refreshConnectionStatus().catch(() => undefined);
 }));
 
-document.querySelector('#addSourceButton').addEventListener('click', () => addSource({ type: 'SUBREDDIT', targetPostCount: 50, sort: 'NEW' }));
+document.querySelector('#addSourceButton').addEventListener('click', () => addSource({
+  type: 'SUBREDDIT',
+  targetPostCount: 50,
+  sort: 'NEW',
+}));
+
 startButton.addEventListener('click', () => start().catch((error) => {
   startButton.disabled = false;
   statusText.textContent = error.message;
@@ -184,8 +197,10 @@ startButton.addEventListener('click', () => start().catch((error) => {
 async function initialize() {
   const stored = await chrome.storage.local.get(['lastConfig', 'lastJobId']);
   const initialSources = stored.lastConfig?.sources ?? [
-    { type: 'HOME', targetPostCount: 50, sort: 'BEST' },
-    { type: 'FOR_YOU', targetPostCount: 50, sort: 'BEST' },
+    { type: 'HOME', targetPostCount: 50 },
+    { type: 'POPULAR', targetPostCount: 50 },
+    { type: 'NEWS', targetPostCount: 50 },
+    { type: 'BEST', targetPostCount: 50 },
     { type: 'SUBREDDIT', subreddit: 'smallbusiness', targetPostCount: 100, sort: 'NEW' },
   ];
   initialSources.forEach(addSource);
