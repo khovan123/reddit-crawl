@@ -1,0 +1,5 @@
+{
+  "appName": { "message": "Reddit Crawl" },
+  "appDescription": { "message": "Thu thập bài viết Reddit bằng phiên đăng nhập hiện tại và lưu kết quả trên máy." },
+  "actionTitle": { "message": "Mở Reddit Crawl" }
+}
