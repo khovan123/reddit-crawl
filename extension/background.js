@@ -1,80 +1,165 @@
 const API_BASE = 'http://127.0.0.1:47831/api/reddit';
+const RETRY_LIMIT = 3;
+const RETRY_WINDOW_MS = 5 * 60 * 1000;
+const RETRY_ALARM = 'reddit-backend-retry';
+const AUTO_CONNECT_ALARM = 'reddit-auto-connect';
+const RETRY_STATE_KEY = 'redditBackendRetryState';
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message?.type === 'CONNECT_SESSION') {
-    connectCurrentSession()
+  if (message?.type === 'CONNECT_SESSION' || message?.type === 'AUTO_CONNECT') {
+    ensureConnection(true)
       .then(sendResponse)
-      .catch((error) => sendResponse({ ok: false, error: error.message }));
+      .catch((error) => sendResponse(failedConnectionResponse(error)));
     return true;
   }
 
   if (message?.type === 'START_CRAWL') {
     startCrawl(message.payload)
       .then(sendResponse)
-      .catch((error) => sendResponse({ ok: false, error: error.message }));
+      .catch((error) => sendResponse({
+        ok: false,
+        error: error.message,
+        connection: failedConnectionResponse(error),
+      }));
     return true;
   }
 
   if (message?.type === 'GET_JOB') {
-    apiFetch(`/crawl/${encodeURIComponent(message.jobId)}`)
+    withRetries(
+      () => apiFetchOnce(`/crawl/${encodeURIComponent(message.jobId)}`),
+      'Đọc trạng thái job',
+    )
       .then((data) => sendResponse({ ok: true, data }))
       .catch((error) => sendResponse({ ok: false, error: error.message }));
     return true;
   }
 
   if (message?.type === 'GET_BACKEND_STATUS') {
-    Promise.all([apiFetch('/health'), apiFetch('/session')])
-      .then(([health, session]) =>
-        sendResponse({
-          ok: true,
-          data: {
-            backendOnline: health?.ok === true,
-            session,
-          },
-        }),
-      )
-      .catch((error) =>
-        sendResponse({
-          ok: false,
-          data: {
-            backendOnline: false,
-            session: { connected: false },
-          },
-          error: error.message,
-        }),
-      );
-    return true;
-  }
-
-  if (message?.type === 'GET_SESSION_STATUS') {
-    apiFetch('/session')
-      .then((data) => sendResponse({ ok: true, data }))
-      .catch((error) => sendResponse({ ok: false, error: error.message }));
+    ensureConnection(false)
+      .then(sendResponse)
+      .catch((error) => sendResponse(failedConnectionResponse(error)));
     return true;
   }
 
   return false;
 });
 
-async function startCrawl(config) {
-  await connectCurrentSession();
-  const data = await apiFetch('/crawl', {
-    method: 'POST',
-    body: JSON.stringify(config),
-  });
-  await chrome.storage.local.set({ lastJobId: data.jobId, lastConfig: config });
-  return { ok: true, data };
+chrome.runtime.onInstalled.addListener(() => {
+  scheduleAutoConnect();
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  scheduleAutoConnect();
+});
+
+chrome.tabs.onActivated.addListener(() => {
+  scheduleAutoConnect();
+});
+
+chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && isRedditUrl(tab.url)) {
+    scheduleAutoConnect();
+  }
+});
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === AUTO_CONNECT_ALARM) {
+    ensureConnection(true).catch(() => undefined);
+    return;
+  }
+
+  if (alarm.name === RETRY_ALARM) {
+    continueRetryWindow().catch(() => undefined);
+  }
+});
+
+function scheduleAutoConnect() {
+  chrome.alarms.create(AUTO_CONNECT_ALARM, { delayInMinutes: 0.05 });
 }
 
-async function connectCurrentSession() {
+async function startCrawl(config) {
+  const connection = await ensureConnection(true);
+  if (!connection.ok || !connection.data?.session?.connected) {
+    throw new Error(connection.error || 'Không thể kết nối Reddit session sau 3 lần thử.');
+  }
+
+  const data = await withRetries(
+    () => apiFetchOnce('/crawl', {
+      method: 'POST',
+      body: JSON.stringify(config),
+    }),
+    'Tạo crawl job',
+  );
+
+  await chrome.storage.local.set({
+    lastJobId: data.jobId,
+    lastConfig: config,
+  });
+
+  return { ok: true, data, connection };
+}
+
+async function ensureConnection(connectSession) {
+  let backendOnline = false;
+  let session = { connected: false };
+
+  try {
+    const health = await withRetries(
+      () => apiFetchOnce('/health'),
+      'Kết nối backend',
+    );
+    backendOnline = health?.ok === true;
+
+    session = await withRetries(
+      () => apiFetchOnce('/session'),
+      'Đọc Reddit session',
+    );
+
+    if (connectSession && !session.connected) {
+      const connected = await withRetries(
+        () => connectCurrentSessionOnce(),
+        'Kết nối Reddit session',
+      );
+      session = {
+        connected: true,
+        issuedAt: connected.issuedAt,
+        sourceUrl: connected.sourceUrl,
+        cookieCount: connected.cookieCount,
+      };
+    }
+
+    await clearRetryWindow();
+    return {
+      ok: true,
+      data: {
+        backendOnline,
+        session,
+        retry: inactiveRetryState(),
+      },
+    };
+  } catch (error) {
+    const retry = await activateRetryWindow(error);
+    return {
+      ok: false,
+      data: {
+        backendOnline,
+        session,
+        retry,
+      },
+      error: error.message,
+    };
+  }
+}
+
+async function connectCurrentSessionOnce() {
   const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
   if (!tab?.id || !tab.url) {
     throw new Error('Không tìm thấy tab đang hoạt động.');
   }
 
   const url = new URL(tab.url);
-  if (url.protocol !== 'https:' || (url.hostname !== 'reddit.com' && !url.hostname.endsWith('.reddit.com'))) {
-    throw new Error('Hãy mở Reddit trong tab hiện tại trước khi kết nối session.');
+  if (!isRedditUrl(tab.url) || url.protocol !== 'https:') {
+    throw new Error('Hãy mở Reddit trong tab hiện tại để extension lấy session.');
   }
 
   const stores = await chrome.cookies.getAllCookieStores();
@@ -150,38 +235,175 @@ async function connectCurrentSession() {
     localStorage: browserState.localStorage,
   };
 
-  const data = await apiFetch('/session', {
+  const data = await apiFetchOnce('/session', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
 
-  return { ok: true, data };
+  return {
+    ...data,
+    sourceUrl: tab.url,
+  };
 }
 
-async function apiFetch(path, init = {}) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Local-Client': 'reddit-crawl-extension',
-      ...(init.headers || {}),
-    },
-  });
+async function withRetries(operation, label) {
+  let lastError;
 
-  const text = await response.text();
-  let data = null;
-  if (text) {
+  for (let attempt = 1; attempt <= RETRY_LIMIT; attempt += 1) {
+    await updateRetryAttempt(attempt, label);
+
     try {
-      data = JSON.parse(text);
-    } catch {
-      data = text;
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      if (attempt < RETRY_LIMIT) {
+        await sleep(750 * 2 ** (attempt - 1));
+      }
     }
   }
 
-  if (!response.ok) {
-    const message = data?.message || data?.error || data || `HTTP ${response.status}`;
-    throw new Error(typeof message === 'string' ? message : JSON.stringify(message));
+  throw new Error(`${label} thất bại sau ${RETRY_LIMIT} lần: ${lastError?.message || lastError}`);
+}
+
+async function apiFetchOnce(path, init = {}) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+
+  try {
+    const response = await fetch(`${API_BASE}${path}`, {
+      ...init,
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Local-Client': 'reddit-crawl-extension',
+        ...(init.headers || {}),
+      },
+    });
+
+    const text = await response.text();
+    let data = null;
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = text;
+      }
+    }
+
+    if (!response.ok) {
+      const message = data?.message || data?.error || data || `HTTP ${response.status}`;
+      throw new Error(typeof message === 'string' ? message : JSON.stringify(message));
+    }
+
+    return data;
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error('Backend không phản hồi trong 10 giây.');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function activateRetryWindow(error) {
+  const now = Date.now();
+  const stored = await readRetryState();
+  const startedAt = stored.active && stored.expiresAt > now
+    ? stored.startedAt
+    : now;
+  const expiresAt = startedAt + RETRY_WINDOW_MS;
+
+  if (expiresAt <= now) {
+    await clearRetryWindow();
+    return inactiveRetryState();
   }
 
-  return data;
+  const state = {
+    active: true,
+    startedAt,
+    expiresAt,
+    attempt: RETRY_LIMIT,
+    lastError: error.message,
+    updatedAt: now,
+  };
+  await chrome.storage.local.set({ [RETRY_STATE_KEY]: state });
+  chrome.alarms.create(RETRY_ALARM, { delayInMinutes: 0.5 });
+  return state;
+}
+
+async function continueRetryWindow() {
+  const state = await readRetryState();
+  if (!state.active || state.expiresAt <= Date.now()) {
+    await clearRetryWindow();
+    return;
+  }
+
+  const result = await ensureConnection(true);
+  if (!result.ok && state.expiresAt > Date.now()) {
+    chrome.alarms.create(RETRY_ALARM, { delayInMinutes: 0.5 });
+  }
+}
+
+async function updateRetryAttempt(attempt, label) {
+  const state = await readRetryState();
+  if (!state.active) return;
+  await chrome.storage.local.set({
+    [RETRY_STATE_KEY]: {
+      ...state,
+      attempt,
+      label,
+      updatedAt: Date.now(),
+    },
+  });
+}
+
+async function readRetryState() {
+  const stored = await chrome.storage.local.get(RETRY_STATE_KEY);
+  return stored[RETRY_STATE_KEY] || inactiveRetryState();
+}
+
+async function clearRetryWindow() {
+  await chrome.alarms.clear(RETRY_ALARM);
+  await chrome.storage.local.set({ [RETRY_STATE_KEY]: inactiveRetryState() });
+}
+
+function inactiveRetryState() {
+  return {
+    active: false,
+    startedAt: 0,
+    expiresAt: 0,
+    attempt: 0,
+    lastError: null,
+    updatedAt: Date.now(),
+  };
+}
+
+function failedConnectionResponse(error) {
+  return {
+    ok: false,
+    data: {
+      backendOnline: false,
+      session: { connected: false },
+      retry: {
+        ...inactiveRetryState(),
+        lastError: error.message,
+      },
+    },
+    error: error.message,
+  };
+}
+
+function isRedditUrl(value) {
+  if (!value) return false;
+  try {
+    const url = new URL(value);
+    return url.hostname === 'reddit.com' || url.hostname.endsWith('.reddit.com');
+  } catch {
+    return false;
+  }
+}
+
+function sleep(duration) {
+  return new Promise((resolve) => setTimeout(resolve, duration));
 }
