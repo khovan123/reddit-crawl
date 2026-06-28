@@ -106,9 +106,10 @@ Manifest V3 khai báo đồng thời:
 - News
 - Best
 - Following
-- Latest
 - Nhiều subreddit, mỗi subreddit có sort và quota riêng
 - Nhiều URL Reddit tùy chỉnh, mỗi URL có quota riêng
+
+Nguồn `https://www.reddit.com/latest/` đã bị loại bỏ. Extension tự xóa cấu hình cũ chứa `LATEST` hoặc URL `/latest/`, và backend từ chối request gửi trực tiếp tới nguồn này.
 
 Với Following, worker mở Home rồi tìm tab/link/button tương ứng vì URL có thể khác giữa các layout Reddit.
 
