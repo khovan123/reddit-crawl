@@ -8,8 +8,15 @@ import { RedditSessionService } from './reddit/reddit-session.service';
   controllers: [RedditController],
   providers: [
     RedditSessionService,
-    RedditCrawlerService,
     RedditOutputService,
+    {
+      provide: RedditCrawlerService,
+      inject: [RedditSessionService, RedditOutputService],
+      useFactory: (
+        sessions: RedditSessionService,
+        output: RedditOutputService,
+      ): RedditCrawlerService => new RedditCrawlerService(sessions, output),
+    },
   ],
 })
 export class AppModule {}
