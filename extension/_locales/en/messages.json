@@ -1,0 +1,5 @@
+{
+  "appName": { "message": "Reddit Crawl" },
+  "appDescription": { "message": "Collect Reddit posts using your current signed-in session and save the results locally." },
+  "actionTitle": { "message": "Open Reddit Crawl" }
+}
