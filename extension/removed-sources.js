@@ -56,25 +56,42 @@
     }
   }
 
-  function removeLatestFromUi() {
-    const card = document.querySelector('.feed-card[data-type="LATEST"]');
-    if (card) card.remove();
-
-    for (const row of document.querySelectorAll('.url-row')) {
-      const input = row.querySelector('[data-field="url"]');
-      if (isRemovedUrl(input?.value)) row.remove();
-    }
-
+  function updateBuiltInCount() {
     const cards = [...document.querySelectorAll('.feed-card')];
     const enabled = cards.filter(
       (item) => item.querySelector('[data-field="enabled"]')?.checked,
     ).length;
     const count = document.querySelector('#builtinSelectedCount');
-    if (count) {
-      const suffix = document.documentElement.lang === 'en' ? 'enabled' : 'đang bật';
-      const next = `${enabled}/${cards.length} ${suffix}`;
-      if (count.textContent !== next) count.textContent = next;
+    if (!count) return;
+
+    const suffix = document.documentElement.lang === 'en' ? 'enabled' : 'đang bật';
+    const next = `${enabled}/${cards.length} ${suffix}`;
+    if (count.textContent !== next) count.textContent = next;
+  }
+
+  function removeLatestFromUi() {
+    let changed = false;
+    const card = document.querySelector('.feed-card[data-type="LATEST"]');
+    if (card) {
+      card.remove();
+      changed = true;
     }
+
+    for (const row of document.querySelectorAll('.url-row')) {
+      const input = row.querySelector('[data-field="url"]');
+      if (isRemovedUrl(input?.value)) {
+        row.remove();
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      globalThis.updateEmptyStates?.();
+      globalThis.updateSelectionSummary?.();
+      void cleanStoredConfiguration();
+    }
+
+    updateBuiltInCount();
   }
 
   const originalBuildCrawlConfig = globalThis.buildCrawlConfig;
