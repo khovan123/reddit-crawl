@@ -1,11 +1,39 @@
 const BUILTIN_FEEDS = [
-  { type: 'HOME', label: 'Home', hint: 'reddit.com/', icon: 'H', count: 50 },
-  { type: 'POPULAR', label: 'Popular', hint: 'r/popular', icon: 'P', count: 50 },
-  { type: 'NEWS', label: 'News', hint: 'reddit.com/news', icon: 'N', count: 50 },
-  { type: 'BEST', label: 'Best', hint: 'posts/global', icon: 'B', count: 50 },
-  { type: 'FOLLOWING', label: 'Following', hint: 'Tài khoản đang theo dõi', icon: 'F', count: 50 },
-  { type: 'LATEST', label: 'Latest', hint: 'Bài mới nhất', icon: 'L', count: 50 },
+  { type: 'HOME', label: 'Trang chủ', hint: 'Bài từ trang Home', icon: 'H', count: 50 },
+  { type: 'POPULAR', label: 'Phổ biến', hint: 'Bài nổi bật trên Reddit', icon: 'P', count: 50 },
+  { type: 'NEWS', label: 'Tin tức', hint: 'Nguồn Reddit News', icon: 'N', count: 50 },
+  { type: 'BEST', label: 'Tốt nhất', hint: 'Bài nổi bật toàn cầu', icon: 'B', count: 50 },
+  { type: 'FOLLOWING', label: 'Đang theo dõi', hint: 'Nguồn tài khoản đang theo dõi', icon: 'F', count: 50 },
+  { type: 'LATEST', label: 'Mới nhất', hint: 'Các bài vừa được đăng', icon: 'L', count: 50 },
 ];
+
+const JOB_LABELS = {
+  QUEUED: 'Đang chuẩn bị',
+  RUNNING: 'Đang quét',
+  COMPLETED: 'Hoàn tất',
+  PARTIAL: 'Hoàn tất một phần',
+  FAILED: 'Có lỗi xảy ra',
+  CANCELLED: 'Đã dừng',
+};
+
+const SOURCE_STATUS_LABELS = {
+  PENDING: 'Đang chờ',
+  RUNNING: 'Đang lấy bài',
+  DONE: 'Hoàn tất',
+  PARTIAL: 'Chưa đủ số bài',
+  FAILED: 'Không thể lấy dữ liệu',
+};
+
+const SOURCE_TYPE_LABELS = {
+  HOME: 'Trang chủ',
+  POPULAR: 'Phổ biến',
+  NEWS: 'Tin tức',
+  BEST: 'Tốt nhất',
+  FOLLOWING: 'Đang theo dõi',
+  LATEST: 'Mới nhất',
+  SUBREDDIT: 'Subreddit',
+  CUSTOM_URL: 'URL Reddit',
+};
 
 const DRAFT_KEY = 'redditCrawlerDraftV2';
 const builtinFeedsElement = document.querySelector('#builtinFeeds');
@@ -23,6 +51,7 @@ const connectionMessage = document.querySelector('#connectionMessage');
 const connectButton = document.querySelector('#connectButton');
 const jobStatusBadge = document.querySelector('#jobStatusBadge');
 const progressSummary = document.querySelector('#progressSummary');
+const progressPanel = document.querySelector('#progressPanel');
 let pollTimer = null;
 let saveTimer = null;
 
@@ -62,6 +91,32 @@ function normalizeCount(value, fallback = 50) {
   const parsed = Number(value);
   if (!Number.isInteger(parsed)) return fallback;
   return Math.max(1, Math.min(2000, parsed));
+}
+
+function friendlyErrorMessage(error) {
+  const raw = typeof error === 'string' ? error : error?.message || String(error || '');
+
+  if (/failed to fetch|networkerror|load failed|fetch failed/i.test(raw)) {
+    return 'Chưa thể liên lạc với ứng dụng Reddit Crawl trên máy.';
+  }
+
+  if (/backend không phản hồi|không phản hồi trong 10 giây/i.test(raw)) {
+    return 'Ứng dụng Reddit Crawl chưa phản hồi. Tiện ích sẽ tự thử lại.';
+  }
+
+  if (/hãy mở reddit trong tab hiện tại/i.test(raw)) {
+    return 'Hãy mở một tab Reddit đã đăng nhập để tiện ích kết nối tài khoản.';
+  }
+
+  if (/không tìm thấy cookie reddit/i.test(raw)) {
+    return 'Chưa tìm thấy phiên đăng nhập Reddit. Hãy đăng nhập Reddit rồi thử lại.';
+  }
+
+  if (/kết nối backend thất bại/i.test(raw)) {
+    return 'Chưa thể kết nối với ứng dụng Reddit Crawl trên máy.';
+  }
+
+  return raw || 'Đã có lỗi xảy ra. Hãy thử lại sau ít phút.';
 }
 
 function migrateLastConfig(lastConfig) {
@@ -315,7 +370,7 @@ function buildCrawlConfig() {
 
   for (const item of draft.subreddits) {
     if (!item.enabled) continue;
-    if (!item.subreddit) throw new Error('Subreddit đang bật nhưng chưa có tên.');
+    if (!item.subreddit) throw new Error('Có một subreddit đang bật nhưng chưa nhập tên.');
     sources.push({
       id: item.id,
       type: 'SUBREDDIT',
@@ -328,15 +383,15 @@ function buildCrawlConfig() {
 
   for (const item of draft.urls) {
     if (!item.enabled) continue;
-    if (!item.url) throw new Error('Nguồn URL đang bật nhưng chưa có địa chỉ.');
+    if (!item.url) throw new Error('Có một nguồn URL đang bật nhưng chưa nhập đường dẫn.');
     let parsed;
     try {
       parsed = new URL(item.url);
     } catch {
-      throw new Error(`URL không hợp lệ: ${item.url}`);
+      throw new Error(`Đường dẫn chưa đúng định dạng: ${item.url}`);
     }
     if (parsed.protocol !== 'https:' || (parsed.hostname !== 'reddit.com' && !parsed.hostname.endsWith('.reddit.com'))) {
-      throw new Error(`URL phải thuộc reddit.com: ${item.url}`);
+      throw new Error(`Đường dẫn phải thuộc Reddit: ${item.url}`);
     }
     sources.push({
       id: item.id,
@@ -348,7 +403,7 @@ function buildCrawlConfig() {
   }
 
   if (sources.length === 0) {
-    throw new Error('Hãy bật ít nhất một nguồn để bắt đầu quét.');
+    throw new Error('Hãy bật ít nhất một nguồn trước khi bắt đầu quét.');
   }
 
   return {
@@ -380,8 +435,8 @@ function updateSelectionSummary() {
     ...enabledUrls,
   ].reduce((sum, value) => sum + normalizeCount(value.targetPostCount), 0);
 
-  document.querySelector('#builtinSelectedCount').textContent = `${enabledBuiltins.length}/${BUILTIN_FEEDS.length} bật`;
-  document.querySelector('#selectionTotal').textContent = `${selectedCount} nguồn`;
+  document.querySelector('#builtinSelectedCount').textContent = `${enabledBuiltins.length}/${BUILTIN_FEEDS.length} đang bật`;
+  document.querySelector('#selectionTotal').textContent = `${selectedCount} nguồn đã chọn`;
   document.querySelector('#selectionPosts').textContent = `${postCount.toLocaleString('vi-VN')} bài dự kiến`;
 }
 
@@ -400,27 +455,33 @@ function renderConnection(result) {
 
   if (backendOnline && sessionConnected) {
     connectionButton.classList.add('online');
-    connectionLabel.textContent = `Đã kết nối · ${data.session.cookieCount || 0} cookies`;
-    connectionTitle.textContent = 'Backend và Reddit session đã sẵn sàng';
-    connectionMessage.textContent = 'Job mới sẽ tự làm mới session trước khi chạy.';
-    connectButton.textContent = 'Làm mới session';
+    connectionLabel.textContent = 'Đã sẵn sàng';
+    connectionTitle.textContent = 'Kết nối thành công';
+    connectionMessage.textContent = `Đã kết nối Reddit với ${data.session.cookieCount || 0} cookie. Bạn có thể bắt đầu quét.`;
+    connectButton.textContent = 'Làm mới kết nối';
     return;
   }
 
   if (retry.active) {
     connectionButton.classList.add('retrying');
-    connectionLabel.textContent = `Đang thử lại ${retry.attempt || 1}/3`;
-    connectionTitle.textContent = backendOnline ? 'Đang kết nối Reddit session' : 'Đang tìm backend local';
+    connectionLabel.textContent = 'Đang kết nối lại…';
+    connectionTitle.textContent = backendOnline
+      ? 'Đang kết nối tài khoản Reddit'
+      : 'Đang kết nối với ứng dụng trên máy';
     const remaining = Math.max(0, Math.ceil((retry.expiresAt - Date.now()) / 60000));
-    connectionMessage.textContent = `Tự thử lại tối đa 3 lần mỗi chu kỳ, còn khoảng ${remaining} phút trong cửa sổ reconnect.`;
+    connectionMessage.textContent = `Tiện ích đang tự thử lại. Thời gian chờ còn khoảng ${remaining} phút.`;
     connectButton.textContent = 'Thử ngay';
     return;
   }
 
   connectionButton.classList.add('offline');
-  connectionLabel.textContent = backendOnline ? 'Chưa có session' : 'Backend offline';
-  connectionTitle.textContent = backendOnline ? 'Backend online, chưa có Reddit session' : 'Không kết nối được backend';
-  connectionMessage.textContent = result?.error || 'Mở Reddit trong tab hiện tại và đảm bảo backend chạy ở 127.0.0.1:47831.';
+  connectionLabel.textContent = backendOnline ? 'Chưa kết nối Reddit' : 'Chưa sẵn sàng';
+  connectionTitle.textContent = backendOnline
+    ? 'Chưa kết nối tài khoản Reddit'
+    : 'Ứng dụng trên máy chưa sẵn sàng';
+  connectionMessage.textContent = backendOnline
+    ? 'Hãy mở một tab Reddit đã đăng nhập, sau đó chọn “Kết nối lại”.'
+    : friendlyErrorMessage(result?.error) || 'Hãy bật ứng dụng Reddit Crawl trên máy. Tiện ích sẽ tự thử kết nối lại.';
   connectButton.textContent = 'Kết nối lại';
 }
 
@@ -432,18 +493,25 @@ async function refreshConnection(autoConnect = false) {
 
 function setJobBadge(status) {
   jobStatusBadge.className = 'job-badge';
+  progressPanel.classList.remove('success', 'warning', 'error', 'active');
+
   if (status === 'RUNNING' || status === 'QUEUED') {
     jobStatusBadge.classList.add('running');
+    progressPanel.classList.add('active');
   } else if (status === 'COMPLETED') {
     jobStatusBadge.classList.add('done');
+    progressPanel.classList.add('success');
   } else if (status === 'PARTIAL') {
     jobStatusBadge.classList.add('partial');
+    progressPanel.classList.add('warning');
   } else if (status === 'FAILED' || status === 'CANCELLED') {
     jobStatusBadge.classList.add('failed');
+    progressPanel.classList.add('error');
   } else {
     jobStatusBadge.classList.add('idle');
   }
-  jobStatusBadge.textContent = status || 'Sẵn sàng';
+
+  jobStatusBadge.textContent = JOB_LABELS[status] || 'Sẵn sàng';
 }
 
 function renderJob(job) {
@@ -453,22 +521,25 @@ function renderJob(job) {
   const done = job.sources.filter((source) => source.status === 'DONE').length;
   progressSummary.classList.remove('hidden');
   progressSummary.innerHTML = `
-    <div class="progress-stat"><strong>${collected}</strong><span>đã lấy</span></div>
-    <div class="progress-stat"><strong>${requested}</strong><span>mục tiêu</span></div>
-    <div class="progress-stat"><strong>${done}/${job.sources.length}</strong><span>nguồn xong</span></div>
+    <div class="progress-stat"><strong>${collected}</strong><span>bài đã lấy</span></div>
+    <div class="progress-stat"><strong>${requested}</strong><span>bài mục tiêu</span></div>
+    <div class="progress-stat"><strong>${done}/${job.sources.length}</strong><span>nguồn hoàn tất</span></div>
   `;
 
   const lines = [
-    `Job: ${job.jobId}`,
-    `Trạng thái: ${job.status}`,
+    job.status === 'COMPLETED' ? 'Quét dữ liệu hoàn tất.' : `Trạng thái: ${JOB_LABELS[job.status] || job.status}`,
+    `Mã lần quét: ${job.jobId}`,
     '',
-    ...job.sources.map(
-      (source) =>
-        `${source.sourceType.padEnd(10)} ${String(source.collected).padStart(4)}/${String(source.requested).padEnd(4)} · scroll ${source.scrollRound} · ${source.status}${source.message ? `\n  ${source.message}` : ''}`,
-    ),
+    ...job.sources.map((source) => {
+      const typeLabel = SOURCE_TYPE_LABELS[source.sourceType] || source.sourceType;
+      const statusLabel = SOURCE_STATUS_LABELS[source.status] || source.status;
+      const message = source.message ? `\n  ${friendlyErrorMessage(source.message)}` : '';
+      return `${typeLabel.padEnd(16)} ${String(source.collected).padStart(4)}/${String(source.requested).padEnd(4)} · ${statusLabel}${message}`;
+    }),
   ];
-  if (job.outputFile) lines.push('', `File: ${job.outputFile}`);
-  if (job.error) lines.push('', `Lỗi: ${job.error}`);
+
+  if (job.outputFile) lines.push('', `Đã lưu kết quả tại: ${job.outputFile}`);
+  if (job.error) lines.push('', `Thông báo: ${friendlyErrorMessage(job.error)}`);
   statusText.textContent = lines.join('\n');
 }
 
@@ -477,7 +548,7 @@ async function pollJob(jobId) {
   const tick = async () => {
     const result = await message({ type: 'GET_JOB', jobId });
     if (!result?.ok) {
-      statusText.textContent = result?.error || 'Không đọc được trạng thái job.';
+      statusText.textContent = friendlyErrorMessage(result?.error);
       return;
     }
     renderJob(result.data);
@@ -488,7 +559,7 @@ async function pollJob(jobId) {
   };
   await tick();
   pollTimer = setInterval(() => tick().catch((error) => {
-    statusText.textContent = error.message;
+    statusText.textContent = friendlyErrorMessage(error);
   }), 2000);
 }
 
@@ -500,12 +571,12 @@ async function startCrawl() {
   });
   startButton.disabled = true;
   setJobBadge('QUEUED');
-  statusText.textContent = 'Đang làm mới session và tạo crawl job…';
+  statusText.textContent = 'Đang chuẩn bị kết nối và tạo lần quét mới…';
   const result = await message({ type: 'START_CRAWL', payload: config });
   renderConnection(result.connection || { data: { backendOnline: true, session: { connected: true } } });
   if (!result?.ok) {
     startButton.disabled = false;
-    throw new Error(result?.error || 'Không thể bắt đầu crawl.');
+    throw new Error(friendlyErrorMessage(result?.error));
   }
   await pollJob(result.data.jobId);
 }
@@ -551,13 +622,13 @@ document.querySelector('#addUrlButton').addEventListener('click', () => {
 
 connectButton.addEventListener('click', () => {
   refreshConnection(true).catch((error) => {
-    renderConnection({ ok: false, error: error.message });
+    renderConnection({ ok: false, error: friendlyErrorMessage(error) });
   });
 });
 
 connectionButton.addEventListener('click', () => {
   refreshConnection(true).catch((error) => {
-    renderConnection({ ok: false, error: error.message });
+    renderConnection({ ok: false, error: friendlyErrorMessage(error) });
   });
 });
 
@@ -565,13 +636,13 @@ startButton.addEventListener('click', () => {
   startCrawl().catch((error) => {
     startButton.disabled = false;
     setJobBadge('FAILED');
-    statusText.textContent = error.message;
+    statusText.textContent = friendlyErrorMessage(error);
     refreshConnection(false).catch(() => undefined);
   });
 });
 
 initialize().catch((error) => {
   setJobBadge('FAILED');
-  statusText.textContent = error.message;
-  renderConnection({ ok: false, error: error.message });
+  statusText.textContent = friendlyErrorMessage(error);
+  renderConnection({ ok: false, error: friendlyErrorMessage(error) });
 });
