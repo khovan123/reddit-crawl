@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { RedditController } from './reddit/reddit.controller';
+import { applyCrawlerRecovery } from './reddit/reddit-crawler-recovery';
 import { RedditCrawlerService } from './reddit/reddit-crawler.service';
 import { RedditCrawlerV2Service } from './reddit/reddit-crawler-v2.service';
 import { RedditOutputService } from './reddit/reddit-output.service';
@@ -20,6 +21,8 @@ import { RedditSourceConfig } from './reddit/reddit.types';
         output: RedditOutputService,
       ) => {
         const crawler = new RedditCrawlerV2Service(sessions, output);
+        applyCrawlerRecovery(crawler);
+
         const runtimeCrawler = crawler as unknown as {
           buildSourceUrl: (
             source: RedditSourceConfig,
