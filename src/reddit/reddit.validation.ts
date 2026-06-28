@@ -43,7 +43,6 @@ const sourceSchema = z
       'POPULAR',
       'NEWS',
       'BEST',
-      'LATEST',
       'SUBREDDIT',
       'CUSTOM_URL',
     ]),
@@ -77,11 +76,20 @@ const sourceSchema = z
         return;
       }
 
-      const hostname = new URL(source.url).hostname;
+      const url = new URL(source.url);
+      const hostname = url.hostname;
       if (hostname !== 'reddit.com' && !hostname.endsWith('.reddit.com')) {
         context.addIssue({
           code: 'custom',
           message: 'CUSTOM_URL must point to reddit.com',
+          path: ['url'],
+        });
+      }
+
+      if (url.pathname.replace(/\/+$/, '').toLowerCase() === '/latest') {
+        context.addIssue({
+          code: 'custom',
+          message: 'The Reddit /latest source has been removed',
           path: ['url'],
         });
       }
