@@ -119,16 +119,17 @@
   }
 
   function loadPopupScript(path, marker) {
-    if (document.querySelector(`script[data-${marker}]`)) return;
+    const attribute = `data-${marker}`;
+    if (document.querySelector(`script[${attribute}]`)) return;
     const script = document.createElement('script');
     script.src = chrome.runtime.getURL(path);
-    script.dataset[marker] = 'true';
+    script.setAttribute(attribute, 'true');
     document.head.append(script);
   }
 
   function loadPopupEnhancements() {
-    loadPopupScript('job-results.js', 'jobResults');
-    loadPopupScript('removed-sources.js', 'removedSources');
+    loadPopupScript('job-results.js', 'job-results');
+    loadPopupScript('removed-sources.js', 'removed-sources');
   }
 
   async function init() {
